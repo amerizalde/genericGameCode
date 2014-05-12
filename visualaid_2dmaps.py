@@ -1,7 +1,6 @@
 import pygame
 import math
 import random
-import debug_print
 
 from sys import argv
 from pygame.locals import *
@@ -56,7 +55,7 @@ class Dungeon(object):
         while n:
             # EVENT LOGIC
             for event in pygame.event.get():
-                self.event_manager(event)
+                self._event_manager(event)
 
             # GAME LOGIC
             try:
@@ -74,21 +73,21 @@ class Dungeon(object):
             # iterate
             n -= 1
 
-    def event_manager(self, event):
+    def _event_manager(self, event):
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
         elif event.type == KEYDOWN:
-            self.key_event(event)
+            self._key_event(event)
         elif event.type == MOUSEBUTTONDOWN:
-            self.mouse_event(event)
+            self._mouse_event(event)
 
-    def key_event(self, event):
+    def _key_event(self, event):
         if event.key == K_ESCAPE:
             pygame.quit()
             sys.exit()
 
-    def mouse_event(self, event):
+    def _mouse_event(self, event):
         pass
 
 
