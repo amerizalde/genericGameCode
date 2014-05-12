@@ -3,7 +3,7 @@ genericGameCode
 
 Experimentation with procedural algorithms, image processing, and manipulation.
 
-_visualaid___2dmaps.py_
+_visualaid_2dmaps.py_
 ---
 requires pygame http://www.pygame.org/
 
