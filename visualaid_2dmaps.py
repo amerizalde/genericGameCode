@@ -22,13 +22,22 @@ class Dungeon(object):
         tile = [1, 128, 255]
         while n:
             try:
+                # wrap around at edges
+                if x >= w:
+                    x = 0
+                if x < 0:
+                    x = w - 1
+                if y >= h:
+                    y = 0
+                if y < 0:
+                    y = h - 1
                 self.grid[x, y] = tile
             except Exception as e:
                 print e
                 return
             x += random.choice(direction)
             y += random.choice(direction)
-            print " {},{}  ".format(x, y)
+            ### print " {},{}  ".format(x, y)
             n -= 1
 
     def rule_four_five(self, n):
@@ -39,9 +48,10 @@ class Dungeon(object):
         tile = [1, 128, 255]
         wall = [0, 0, 0]
         while n:
-            for i in xrange(w):
-                for j in xrange(h):
-                    neighbors = self.num_walls(i, j)
+            for i in xrange(w - 1):
+                for j in xrange(h - 1):
+                    ### print "*** {}, {} ***".format(i, j)
+                    neighbors = self.num_walls(i, j, w, h)
                     if neighbors <= 3:
                         self.grid[i, j] = tile
                     elif neighbors > 5:
@@ -49,50 +59,42 @@ class Dungeon(object):
             # iterate
             n -= 1
 
-    def num_walls(self, i, j):
+    def num_walls(self, i, j, w, h):
         """ determine the number of neighbors that are a wall.
                 WARNING: WALL OF TEXT INCOMING
         """
         # nw
         def northw(grid, i, j):
             cell = grid[i - 1, j - 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # n
         def north(grid, i, j):
             cell = grid[i, j - 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # ne
         def northe(grid, i, j):
             cell = grid[i + 1, j - 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # e
         def east(grid, i, j):
             cell = grid[i + 1, j]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # se
         def southe(grid, i, j):
             cell = grid[i + 1, j + 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # s
         def south(grid, i, j):
             cell = grid[i, j + 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # sw
         def southw(grid, i, j):
             cell = grid[i - 1, j + 1]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
         # w
         def west(grid, i, j):
             cell = grid[i - 1, j]
-            print cell
-            return True if cell == [0, 0, 0] else False
+            return True if cell.all() == False else False
 
         count = 0
 
@@ -198,6 +200,15 @@ class Dungeon(object):
 
             # GAME LOGIC
             try:
+                # wrap around at edges
+                if x >= w:
+                    x = 0
+                if x < 0:
+                    x = w - 1
+                if y >= h:
+                    y = 0
+                if y < 0:
+                    y = h - 1
                 self.grid[x, y] = tile
             except Exception as e:
                 print "Walked out of bounds,\n{}".format(e)
@@ -234,6 +245,8 @@ if __name__ == "__main__":
     _, w, h = argv
     w, h = int(w), int(h)
     dungeon = Dungeon(w, h)
-    dungeon.walk(32768)
-    dungeon.rule_four_five(3)
-    dungeon.toImage("test_{}.png".format(random.randint(1000, 2000)))
+    dungeon.visualize(32768)
+    n = random.randint(1000, 2000)
+    dungeon.toImage("test_{}.png".format(n))
+    dungeon.rule_four_five(2)
+    dungeon.toImage("test_{}_smooth.png".format(n))
