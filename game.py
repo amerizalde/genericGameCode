@@ -19,12 +19,16 @@ class NewGame(object):
     """ Start a game using procedurally-generated, reusable maps."""
 
     map_n = 0
-    def __init__(self, path):
+    resolution = (256, 256)
+
+    def __init__(self, path, resolution=None):
         """ Looks for a /save directory, indicating that there are
         already maps generated.
         """
         self.path = path
         self.view = os.listdir(path)
+        if resolution and type(resolution) == tuple:
+            self.resolution = resolution
         if 'save' not in self.view:
             self.create()
         self.build()
@@ -38,7 +42,7 @@ class NewGame(object):
                 raise
 
         for i in xrange(2):
-            dungeon = mapgen.Dungeon(256, 256)
+            dungeon = mapgen.Dungeon(resolution[0], resolution[1])
             dungeon.walk(32768)
             dungeon.rule_four_five(2)
             dungeon.toImage("save/level_{}.jpg".format(i))
