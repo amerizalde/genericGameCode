@@ -1,6 +1,6 @@
 # Game showing off random level generation and save states
 import pygame
-import os
+import os, sys
 import visualaid_2dmaps as mapgen
 
 from pygame.locals import *
@@ -44,14 +44,20 @@ class NewGame(object):
             dungeon.toImage("save/level_{}.jpg".format(i))
 
     def build(self):
-        self.level = getPixelArray("save/level_{}.jpg".format(self.map_n))
+        try:
+            self.level = getPixelArray("save/level_{}.jpg".format(self.map_n))
+        except:
+            print "Out of maps!"
+            self._quit()
 
     def next(self):
         self.map_n += 1
+        pygame.display.set_caption("Level {}".format(self.map_n))
         self.build()
 
     def previous(self):
         self.map_n -= 1
+        pygame.display.set_caption("Level {}".format(self.map_n))
         self.build()
 
     def show(self):
@@ -72,8 +78,7 @@ class NewGame(object):
 
     def _event_manager(self, event):
         if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
+            self._quit()
         elif event.type == KEYDOWN:
             self._key_event(event)
         elif event.type == MOUSEBUTTONDOWN:
@@ -83,10 +88,19 @@ class NewGame(object):
         if event.key == K_ESCAPE:
             pygame.quit()
             sys.exit()
+        elif event.key == K_PAGEUP:
+            self.next()
+        elif event.key == K_PAGEDOWN:
+            self.previous()
 
     def _mouse_event(self, event):
         pass
 
+    def _quit(self):
+        pygame.quit()
+        sys.exit()
+
 if __name__ == "__main__":
     path = os.getcwd()
     game = NewGame(path)
+    game.show()
