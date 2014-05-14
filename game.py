@@ -65,11 +65,15 @@ class NewGame(object):
         self.build()
 
     def show(self):
+        clock = pygame.time.Clock()
         w, h, _ = self.level.shape
         display = pygame.display.set_mode((w, h), 0, 32)
         pygame.display.set_caption("Level {}".format(self.map_n))
 
         while True:
+            # FPS Limit
+            clock.tick(30)
+
             # EVENT LOGIC
             for event in pygame.event.get():
                 self._event_manager(event)
