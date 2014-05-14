@@ -1,6 +1,8 @@
 import pygame
 import math
 import random
+import datetime
+import progress_tracker
 
 from sys import argv
 from pygame.locals import *
@@ -20,6 +22,7 @@ class Dungeon(object):
         w, h, _ = self.grid.shape
         x, y = math.floor(w / 2), math.floor(h / 2)
         tile = [1, 128, 255]
+        start_time = datetime.datetime.now()
         while n:
             try:
                 # wrap around at edges
@@ -37,7 +40,10 @@ class Dungeon(object):
                 return
             x += random.choice(direction)
             y += random.choice(direction)
-            ### print " {},{}  ".format(x, y)
+
+            # progress tracker
+            progress_tracker.report(start_time)
+
             n -= 1
 
     def rule_four_five(self, n):
@@ -47,15 +53,19 @@ class Dungeon(object):
         w, h, _ = self.grid.shape
         tile = [1, 128, 255]
         wall = [0, 0, 0]
+        start_time = datetime.datetime.now()
         while n:
             for i in xrange(w - 1):
+                # progress tracker
+                progress_tracker.report(start_time)
                 for j in xrange(h - 1):
-                    ### print "*** {}, {} ***".format(i, j)
-                    neighbors = self.num_walls(i, j, w, h)
+                    iter_i, iter_j = i, j
+                    neighbors = self.num_walls(iter_i, iter_j, w, h)
                     if neighbors <= 3:
-                        self.grid[i, j] = tile
+                        self.grid[iter_i, iter_j] = tile
                     elif neighbors > 5:
-                        self.grid[i, j] = wall
+                        self.grid[iter_i, iter_j] = wall
+
             # iterate
             n -= 1
 
