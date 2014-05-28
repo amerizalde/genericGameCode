@@ -1,118 +1,213 @@
-# Game showing off random level generation and save states
+import threading
+import random
 import pygame
-import os, sys
-import visualaid_2dmaps as mapgen
+import math
 
 from pygame.locals import *
 
 
-def getPixelArray(filename):
-    try:
-        image = pygame.image.load(filename)
-    except pygame.error, message:
-        print "Cannot load image:", filename
-        raise SystemExit, message
-    return pygame.surfarray.array3d(image)
+#  -- CONSTANTS --
+NUM_WORMS =         24
+CELL_SIZE =         20
+CELLS_WIDE =        40
+CELLS_HIGH =        32
+BGCOLOR =           color.THECOLORS["black"]
+GRID_LINES_COLOR =  color.THECOLORS["darkslategray"]
+SURFACEWIDTH =      CELL_SIZE * CELLS_WIDE
+SURFACEHEIGHT =     CELL_SIZE * CELLS_WIDE
+UP =    'up'
+DOWN =  'down'
+LEFT =  'left'
+RIGHT = 'right'
+HEAD =  0
 
+# -- SHARED DATA --
+GRID = [[None] * CELLS_HIGH for i in xrange(CELLS_WIDE)]
+GRID_LOCK = threading.Lock()
+GAME_OVER = False
 
-class NewGame(object):
-    """ Start a game using procedurally-generated, reusable maps."""
+class Mobile(threading.Thread):
+    """
+    [name] -- to identify a specific thread 
+    [color] -- the color to represent a specialization
+    [speed] -- how many turns per X does this get?
+    [ai] -- how does it move, act, and react?
+    [archetype] -- what does it specialize in?
+    [team] -- which side is it on?
+    """
 
-    map_n = 0
-    resolution = (256, 256)
+    def __init__(self, name=None, color=None, speed=None, ai=None,
+        archetype=None, team=None):
+        global GRID, GRID_LOCK, CELLS_WIDE, CELLS_HIGH, UP, DOWN, LEFT, RIGHT
+        super(Worm, self).__init__()
+        self.name = name
 
-    def __init__(self, path, resolution=None):
-        """ Looks for a /save directory, indicating that there are
-        already maps generated.
-        """
-        self.path = path
-        self.view = os.listdir(path)
-        if resolution and type(resolution) == tuple:
-            self.resolution = resolution
-        if 'save' not in self.view:
-            self.create()
-        self.build()
+        if color is None:
+            self.color = (random.randint(60, 255),
+                random.randint(60, 255),
+                random.randint(60, 255))
+        else:
+            self.color = color
 
-    def create(self):
-        """ generate a new /save folder and populate it with 32 maps."""
-        try:
-            os.mkdir(self.path + '/save')
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        if speed is None:
+            self.speed = random.randint(200, 500) # .02 - .5 secs
+        else:
+            self.speed = speed
 
-        for i in xrange(2):
-            dungeon = mapgen.Dungeon(resolution[0], resolution[1])
-            dungeon.walk(32768)
-            dungeon.rule_four_five(2)
-            dungeon.toImage("save/level_{}.jpg".format(i))
+        self.ai = ai
+        self.archetype = archetype
+        self.team = team
 
-    def build(self):
-        try:
-            self.level = getPixelArray("save/level_{}.jpg".format(self.map_n))
-        except:
-            print "Out of maps!"
-            self._quit()
+        # ACQUIRE LOCK-ON .. PEW PEW!
+        GRID_LOCK.acquire()
 
-    def next(self):
-        self.map_n += 1
-        pygame.display.set_caption("Level {}".format(self.map_n))
-        self.build()
-
-    def previous(self):
-        self.map_n -= 1
-        pygame.display.set_caption("Level {}".format(self.map_n))
-        self.build()
-
-    def show(self):
-        clock = pygame.time.Clock()
-        w, h, _ = self.level.shape
-        display = pygame.display.set_mode((w, h), 0, 32)
-        pygame.display.set_caption("Level {}".format(self.map_n))
-
+        # Find a valid spawn point
         while True:
-            # FPS Limit
-            clock.tick(30)
+            startx = random.randint(0, CELLS_WIDE - 1)
+            starty = random.randint(0, CELLS_HIGH - 1)
+            if GRID[startx][starty] is None:
+                break  # we've found an unoccupied cell in the grid
 
-            # EVENT LOGIC
-            for event in pygame.event.get():
-                self._event_manager(event)
+        # Modifying the shared data Grid.
+        # Changing the color of the cell to this Worm's color
+        GRID[startx][starty] = self.color
 
-            # GAME LOGIC
+        # done modifying.. RELEASE
+        GRID_LOCK.release()
 
-            # DRAWING LOGIC
-            # draw the background ( the level )
-            pygame.surfarray.blit_array(display, self.level)
-            # draw the loot
-            # draw the npc's
-            # draw the player
-            pygame.display.flip()
+        self.body = [{'x': startx, 'y': starty}]
+        self.direction = random.choice((UP, DOWN, LEFT, RIGHT))
+        self.target = None
+        self.dead = False
 
-    def _event_manager(self, event):
-        if event.type == QUIT:
-            self._quit()
-        elif event.type == KEYDOWN:
-            self._key_event(event)
-        elif event.type == MOUSEBUTTONDOWN:
-            self._mouse_event(event)
+    def run(self):
+        """ if self.target.dead or None: 
+                Acquire a valid target.
+                if no valid targets:
+                    GAME_OVER = True
 
-    def _key_event(self, event):
-        if event.key == K_ESCAPE:
-            pygame.quit()
-            sys.exit()
-        elif event.key == K_PAGEUP:
-            self.next()
-        elif event.key == K_PAGEDOWN:
-            self.previous()
+            Move into attack range. Attack.
+        """
+        global GRID, GRID_LOCK, CELLS_WIDE, CELLS_HIGH, GAME_OVER
+        while True:
+            if GAME_OVER or self.dead:
+                return
 
-    def _mouse_event(self, event):
-        pass
+            if self.archetype:
+                # FIND TARGET
+                if self.target.dead or self.target is None:
+                    self.find_target()
+                # ATTACKING
+                if self.archetype.in_range():
+                    self.archetype.attack(self.target)
+                else:
+                    # MOVING
+                    self.move()
 
-    def _quit(self):
-        pygame.quit()
-        sys.exit()
+            # speed is governed by sleeping for the length of self.speed
+            pygame.time.wait(self.speed)
 
-if __name__ == "__main__":
-    path = os.getcwd()
-    game = NewGame(path)
-    game.show()
+    def move(self):
+        global GRID, GRID_LOCK, CELLS_WIDE, CELLS_HIGH, UP, DOWN, LEFT, RIGHT
+
+        GRID_LOCK.acquire()
+        nextx, nexty = self.getNextPosition()
+        # if Grid[nextx][nexty] is occupied or out of bounds...
+        if nextx in (-1, CELLS_WIDE) or nexty in (
+            -1, CELLS_HIGH) or GRID[nextx][nexty] is not None:
+            # try going a different way...
+            self.direction = self.getNewDirection()
+
+            # that didn't work so...
+            if self.direction is None:
+                # self.body.reverse()  # Being a list means reversing
+                #                      # direction is built-in!
+                self.direction = self.getNewDirection()
+
+            # that worked!
+            if self.direction is not None:
+                nextx, nexty = self.getNextPosition()
+        # if Grid[nextx][nexty] is NOT occupied, and in the Grid...
+        if self.direction is not None:
+            GRID[nextx][nexty] = self.color
+            self.body[0]["x"] = nextx
+            self.body[0]["y"] = nexty
+        else:
+            # can't move there, so try a new direction
+            self.direction = random.choice((UP, DOWN, LEFT, RIGHT))
+        GRID_LOCK.release()
+
+    def target_bearing(self):
+        """ find distance to target and return a normalized vector"""
+        dx = self.target.body['x'] - self.body['x']
+        dy = self.target.body['y'] - self.body['y']
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+        dx = int(round(dx / distance))
+        dy = int(round(dy / distance))
+        return dx, dy
+
+    def move_to(self, pos):
+        """ for mouse movement """
+        dx = pos[0] - self.body['x']
+        dy = pos[1] - self.body['y']
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+        dx = int(round(dx / distance))
+        dy = int(round(dy / distance))
+        return dx, dy
+
+    def getNextPosition(self):
+        """ Return the x, y values of self.direction"""
+        global UP, DOWN, LEFT, RIGHT, HEAD
+        if self.direction == UP:
+            nextx = self.body[HEAD]['x']
+            nexty = self.body[HEAD]['y'] - 1
+        elif self.direction == DOWN:
+            nextx = self.body[HEAD]['x']
+            nexty = self.body[HEAD]['y'] + 1
+        elif self.direction == LEFT:
+            nextx = self.body[HEAD]['x'] - 1
+            nexty = self.body[HEAD]['y']
+        elif self.direction == RIGHT:
+            nextx = self.body[HEAD]['x'] + 1
+            nexty = self.body[HEAD]['y']
+        else:
+            assert False, 'Bad value for self.direction: {}'.format(
+                self.direction)
+        return nextx, nexty
+
+    def getNewDirection(self):
+        """ when bearing to target changes,
+            this will be used to find the next best move. """
+        global GRID, GRID_LOCK, CELLS_HIGH, CELLS_WIDE, HEAD
+        t_x, t_y = self.target_bearing()
+        x = self.body[HEAD]['x']
+        y = self.body[HEAD]['y']
+        # holds the possible directions to move
+        newDirection = []
+        borderY = (-1, CELLS_HIGH)
+        borderX = (-1, CELLS_WIDE)
+        # determine valid exits
+        if t_y == 1:
+            if y - 1 not in borderY and GRID[x][y - 1] is None:
+                newDirection.append(UP)
+        if t_y == -1:
+            if y + 1 not in borderY and GRID[x][y + 1] is None:
+                newDirection.append(DOWN)
+        if t_x == -1:
+            if x - 1 not in borderX and GRID[x - 1][y] is None:
+                newDirection.append(LEFT)
+        if t_x == 1:
+            if x + 1 not in borderX and GRID[x + 1][y] is None:
+                newDirection.append(RIGHT)
+
+        # if there are no valid exits, return None
+        if newDirection == []:
+            return None
+        # otherwise, pick an exit at random and return it.
+        # TODO: add a weight to the choices?
+        else:
+            return random.choice(newDirection)
+
+    def find_target(self, targets):
+        targets = [t for t in targets if t.team != self.team]
+        self.target = random.choice(targets)

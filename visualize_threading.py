@@ -27,7 +27,6 @@ GRID_LOCK = threading.Lock()
 WORMS_RUNNING = True
 
 
-
 class Worm(threading.Thread):
     """ Just an abstract idea of a worm/snake to learn about Threads.
 
@@ -227,7 +226,7 @@ class Game(object):
             # after it is added to the list
             self.worms[-1].start()
         while True:
-            # screen is already cleared in the call to .drawGrid()
+            # screen is already cleared in the call to .draw_grid()
             # self.display.blit(self.background, (0, 0))  # clear screen
 
             # EVENT LOGIC
@@ -237,7 +236,7 @@ class Game(object):
             # the threads are handling their own logic.
 
             # DRAW
-            self.drawGrid()
+            self.draw_grid()
             self.show_fps()
             pygame.display.flip()
 
@@ -282,7 +281,7 @@ class Game(object):
         """ Handle all mouse events. """
         pass
 
-    def drawGrid(self):
+    def draw_grid(self):
         """ Draw the grid and then fill the appropriate cells. """
         global GRID, GRID_LOCK, CELLS_HIGH, CELLS_WIDE, BGCOLOR, GRID_LINES_COLOR
         self.display.fill(BGCOLOR)
