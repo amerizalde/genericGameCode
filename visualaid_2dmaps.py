@@ -57,9 +57,10 @@ class Dungeon(object):
         while n:
             for i in xrange(w - 1):
                 # progress tracker
+                iter_i = i
                 progress_tracker.report(start_time)
                 for j in xrange(h - 1):
-                    iter_i, iter_j = i, j
+                    iter_j = j
                     neighbors = self.num_walls(iter_i, iter_j, w, h)
                     if neighbors <= 3:
                         self.grid[iter_i, iter_j] = tile

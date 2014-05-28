@@ -81,7 +81,11 @@ class NewGame(object):
             # GAME LOGIC
 
             # DRAWING LOGIC
+            # draw the background ( the level )
             pygame.surfarray.blit_array(display, self.level)
+            # draw the loot
+            # draw the npc's
+            # draw the player
             pygame.display.flip()
 
     def _event_manager(self, event):
