@@ -227,7 +227,8 @@ class Game(object):
             # after it is added to the list
             self.worms[-1].start()
         while True:
-            self.display.blit(self.background, (0, 0))  # clear screen
+            # screen is already cleared in the call to .drawGrid()
+            # self.display.blit(self.background, (0, 0))  # clear screen
 
             # EVENT LOGIC
             for event in pygame.event.get():
@@ -286,7 +287,7 @@ class Game(object):
         global GRID, GRID_LOCK, CELLS_HIGH, CELLS_WIDE, BGCOLOR, GRID_LINES_COLOR
         self.display.fill(BGCOLOR)
 
-        # draw a grid covering the extent of the window
+        # draw a grid of lines covering the extent of the window
         map(
             lambda pos: pygame.draw.line(
                 self.display,
@@ -302,28 +303,35 @@ class Game(object):
                 (self.info.current_w, pos)),
             range(0, self.info.current_h, CELL_SIZE))
 
+        GRID_LOCK.acquire()
         # determine what color each cell should be this frame
         # and draw a rect representing that cell.
-        GRID_LOCK.acquire()
         for x in xrange(0, CELLS_WIDE):
             i_x = x
             for y in xrange(0, CELLS_HIGH):
                 i_y = y
+                # if None, dont draw anything and move on
                 if GRID[i_x][i_y] is None:
                     continue
+                # the inner cell color
                 color = GRID[i_x][i_y]
+                # the outer cell color
                 darkerColor = (max(color[0] - 50, 0),
                     max(color[1] - 50, 0),
                     max(color[2] - 50, 0))
+                # draw two rects, one of full CELL_SIZE but slightly darker
+                # color to create a border effect...
                 pygame.draw.rect(
                     self.display,
                     darkerColor,
                     (i_x * CELL_SIZE, i_y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+                # ...another of normal color but slightly smaller CELL_SIZE
                 pygame.draw.rect(
                     self.display,
                     color,
                     (i_x * CELL_SIZE + 4, i_y * CELL_SIZE + 4,
                         CELL_SIZE - 8, CELL_SIZE - 8))
+
         GRID_LOCK.release()
 
     def setGridSquares(self, squares, color=(192, 192, 192)):
@@ -340,7 +348,7 @@ class Game(object):
         GRID_LOCK.acquire()
         for y in xrange(min(len(squares), CELLS_HIGH)):
             i_y = y
-            for x in range(min(len(squares[i_y]), CELLS_WIDE)):
+            for x in xrange(min(len(squares[i_y]), CELLS_WIDE)):
                 i_x = x
                 if squares[i_y][i_x] == " ":
                     GRID[i_x][i_y] = None
