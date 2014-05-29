@@ -58,16 +58,19 @@ contents = os.listdir(path)
 files = get_images(path, contents)
 
 # how big does the initial sprite sheet need to be? #
-if len(files) % 2 == 0:
+if len(files) <= 2:
+    split = 2
+elif len(files) % 2 == 0:
     split = len(files) / 2
 else:
     split = (len(files) + 1) / 2
 w = sum([f[0].get_width() for f in files])
 h = sum([f[0].get_height() for f in files])
-print split
 perimeter = files[0][0].get_width() * split
 print perimeter  ###
 surf = pygame.Surface((perimeter, perimeter))
+
+# the background color
 color_key = (0, 0, 0)
 surf.fill(color_key)
 spacer = 2 # 2px
