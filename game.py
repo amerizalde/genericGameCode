@@ -7,6 +7,7 @@ import os
 
 from pygame.locals import *
 
+# TODO -- A* for bots. Target change upon reaching target.
 
 #  -- CONSTANTS --
 NUM_BOTS =          24
