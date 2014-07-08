@@ -10,11 +10,11 @@ class Vector2d(object):
 	def length(self):
 		return math.sqrt(self._x ** 2 + self._y ** 2)
 
-	@property  # vec.length2
-	def length2(self):
+	@property  # vec.length_comparison
+	def length_comparison(self):
 		return (self._x ** 2 + self._y ** 2)
 
-	@property
+	@property  # vec.x
 	def x(self):
 		return self._x
 
@@ -22,7 +22,7 @@ class Vector2d(object):
 	def x(self, value):
 		return Vector2d(value, self._y)
 
-	@property
+	@property  # vec.y
 	def y(self):
 		return self._y
 
@@ -33,12 +33,22 @@ class Vector2d(object):
 	def __eq__(self, other):
 		if self.x == other.x and self.y == other.y:
 			return True
+		else:
+			return False
 
 	def __add__(self, other):
-		return Vector2d(self.x + other.x, self.y + other.y)
+		if type(other) is Vector2d:
+			return Vector2d(self.x + other.x, self.y + other.y)
+		else:
+			assert type(other) in (int, float)
+			return Vector2d(self.x + other, self.y + other)
 
 	def __sub__(self, other):
-		return Vector2d(self.x - other.x, self.y - other.y)
+		if type(other) is Vector2d:
+			return Vector2d(self.x - other.x, self.y - other.y)
+		else:
+			assert type(other) in (int, float)
+			return Vector2d(self.x - other, self.y - other)
 
 	def __repr__(self):
 		return "Vector2d({}, {})".format(self.x, self.y)
@@ -62,7 +72,7 @@ def closest(a, opfor):
 	"""
 	assert type(a) is Vector2d, "arg `a` MUST be a Vector2d."
 	assert hasattr(opfor, '__contains__'), "arg2 MUST be an iterable of Vector2d objects."
-	target = min([((a - i).length2, i) for i in opfor])
+	target = min([((a - i).length_comparison, i) for i in opfor])
 	return target[1]
 
 def look(a, b):
@@ -98,7 +108,7 @@ def is_behind(a, b):
 	if dotp < -0.5:
 		return True
 
-def deltaTime():
+def delta_time():
 	global TIME
 	newTime = time.time()
 	dt, TIME = newTime - TIME, newTime
@@ -120,3 +130,10 @@ def attract(a, b):
 	x = d.x / d.length
 	y = d.y / d.length
 	verlet(a, Vector2d(x, y), .001)
+
+def lerp(goal, current, dt):
+	""" move to goal from current, by dt allowed."""
+	if current.length_comparison < goal.length_comparison:
+		return current + dt
+	else:
+		return goal

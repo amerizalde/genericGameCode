@@ -49,4 +49,12 @@ def test_closest():
 		ops.append(gm.Vector2d(random.randint(0, 100), random.randint(0, 100)))
 	winner = gm.closest(a, ops)
 
+def test_lerp():
+	current = gm.Vector2d(0, 0)
+	goal = gm.Vector2d(100, 100)
 
+	move = gm.lerp(goal, current, gm.delta_time())
+	assert_not_equal(move, current)
+	assert_not_equal(move, goal)
+	assert move.length_comparison > current.length_comparison
+	assert move.length_comparison < goal.length_comparison
