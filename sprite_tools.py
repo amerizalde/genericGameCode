@@ -1,7 +1,5 @@
 import pygame
 import os
-from PIL import Image
-from pprint import pprint
 from pygame.locals import *
 from sys import argv
 
@@ -17,60 +15,82 @@ except Exception as e:
 *******************************************************************'''.format((e,))
 
 try:
-    _, folder = argv
+    _, folder, saveas = argv
 except ValueError as e:
     print '''*******************************************************************
-    ERROR: {}
+    Usage:
+        python|pypy sprite_tools.py <path_to_directory> <name>
 
-    If the folder name has spaces in it, like My Pictures,
-    enclose it in double-quotes, i.e. "My Documents/My Pictures".
+        <path_to_directory> -- the relative path of the folder
+        <name> -- name to give the sprite-sheet
 
 *******************************************************************'''.format((e,))
 
 def is_image(path_to_file):
-    try:
-        im = pygame.image.load(path_to_file)
-        return (im, path_to_file)  # retain the path to the orig image
-    except pygame.error:
+    if os.path.isfile(path_to_file):
+        try:
+            im = pygame.image.load(path_to_file)
+            return (im, path_to_file)  # retain the path to the orig image
+        except pygame.error:
+            pass
+    else:
         pass
 
+def get_images(directory, contents):
+    """ Return all image files (according to pygame),
+        ignoring sub-directories.
+
+        <directory> -- the valid path to search
+        <contents> -- a list of strings returned from os.listdir()"""
+    images = []
+    for f in contents:
+        path = "{}/{}".format(directory, f)
+        im = is_image(path)
+        if im is not None:
+            images.append(im)
+    return images
+
 # CHOOSING FOLDER #
-path = os.path.join(os.path.expanduser("~"), folder)
+path = os.path.join(os.getcwd(), folder)
 contents = os.listdir(path)
-# END #
 
 # GETTING ALL IMAGES #
-files = []
-for f in contents:
-    sub_path = "{}/{}".format(path, f)
-    if os.path.isfile(sub_path):
-        im = is_image(sub_path)
-        if im is not None:
-            files.append(im)
-# END #
+files = get_images(path, contents)
 
 # how big does the initial sprite sheet need to be? #
+if len(files) <= 2:
+    split = 2
+elif len(files) % 2 == 0:
+    split = len(files) / 2
+else:
+    split = (len(files) + 1) / 2
 w = sum([f[0].get_width() for f in files])
 h = sum([f[0].get_height() for f in files])
-print w, h
+perimeter = files[0][0].get_width() * split
+print perimeter  ###
+surf = pygame.Surface((perimeter, perimeter))
 
-sheets = []
-w, h = 4000, 4000
-surf = pygame.Surface((w, h))
-surf.fill((128, 128, 128))
+# the background color
+color_key = (0, 0, 0)
+surf.fill(color_key)
 spacer = 2 # 2px
 cursor_x, cursor_y = 0, 0
 for f in files:
+    # get image dimensions
     f_w, f_h = f[0].get_width(), f[0].get_height()
-    if cursor_x + f_w < w:
+    # check if there is room in this column for the image
+    if cursor_x + f_w < perimeter - f_w:
         surf.blit(f[0], (cursor_x, cursor_y))
+    # else drop to the next row, first column
     else:
         cursor_x = 0
         cursor_y += f_h + spacer
-        if cursor_y >= h:
+        # this should never run, but just in case...
+        if cursor_y >= perimeter - f_h:
             break
         else:
             surf.blit(f[0], (cursor_x, cursor_y))
     cursor_x += f_w + spacer
 
-pygame.image.save(surf, path + "/test.jpg")
+# save the surface to disk.
+pygame.image.save(surf, path + "/{}.png".format(saveas))
