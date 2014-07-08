@@ -103,3 +103,20 @@ def deltaTime():
 	newTime = time.time()
 	dt, TIME = newTime - TIME, newTime
 	return .15 if dt > .15 else dt
+
+def verlet(a, b, damper=1):
+	""" verlet integration.
+	Return a new Vector2d.
+	"""
+	assert type(a) is Vector2d, "arg `a` MUST be a Vector2d."
+	assert type(b) is Vector2d, "arg `b` MUST be a Vector2d."
+	assert 0 <= damper <= 1, "damper must be in 0..1 range."
+	return (a - b) * damper
+
+def attract(a, b):
+	assert type(a) is Vector2d, "arg `a` MUST be a Vector2d."
+	assert type(b) is Vector2d, "arg `b` MUST be a Vector2d."
+	d = b - a
+	x = d.x / d.length
+	y = d.y / d.length
+	verlet(a, Vector2d(x, y), .001)
