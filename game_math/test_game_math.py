@@ -43,6 +43,7 @@ def test_look():
 	assert_equal(round(normal.length), 1, normal.length)
 
 def test_closest():
+	# Unfinished test
 	a = gm.Vector2d(1, 2)
 	ops = []
 	for i in range(100):
@@ -50,11 +51,21 @@ def test_closest():
 	winner = gm.closest(a, ops)
 
 def test_lerp():
-	current = gm.Vector2d(0, 0)
+	start = gm.Vector2d(0, 1.)
 	goal = gm.Vector2d(100, 100)
 
-	move = gm.lerp(goal, current, gm.delta_time())
-	assert_not_equal(move, current)
-	assert_not_equal(move, goal)
-	assert move.length_comparison > current.length_comparison
-	assert move.length_comparison < goal.length_comparison
+	def approach(steps):
+		move = gm.lerp(goal, start, gm.delta_time())
+		while steps:
+			move = gm.lerp(goal, move, gm.delta_time())
+			steps -= 1
+		return move
+
+	current = approach(5)
+	assert_not_equal(current, start)
+	assert current.length_comparison > start.length_comparison
+
+	start, goal = goal, start
+	current = approach(5)
+	assert_not_equal(current, start)
+	assert current.length_comparison > start.length_comparison

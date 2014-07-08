@@ -61,7 +61,7 @@ class Vector2d(object):
 
 
 GRAVITY = Vector2d(0, -2)
-TIME = time.time()
+TIME = time.clock()
 
 def closest(a, opfor):
 	"""
@@ -110,8 +110,8 @@ def is_behind(a, b):
 
 def delta_time():
 	global TIME
-	newTime = time.time()
-	dt, TIME = newTime - TIME, newTime
+	newTime = time.clock()
+	dt = newTime - TIME
 	return .15 if dt > .15 else dt
 
 def verlet(a, b, damper=1):
@@ -132,8 +132,10 @@ def attract(a, b):
 	verlet(a, Vector2d(x, y), .001)
 
 def lerp(goal, current, dt):
-	""" move to goal from current, by dt allowed."""
-	if current.length_comparison < goal.length_comparison:
+	""" move to goal from current, by a distance of delta time."""
+	diff = (goal - current).length
+	if diff > dt:
 		return current + dt
-	else:
-		return goal
+	if diff < -dt:
+		return current - dt
+	return goal
