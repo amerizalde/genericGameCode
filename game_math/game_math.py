@@ -2,9 +2,10 @@ import math, time
 
 class Vector2d(object):
 
-	def __init__(self, x, y):
+	def __init__(self, x, y, z=0):
 		self._x = x
 		self._y = y
+		self._z = z
 
 	@property  # vec.length
 	def length(self):
@@ -20,6 +21,7 @@ class Vector2d(object):
 
 	@x.setter
 	def x(self, value):
+		assert type(value) in (int, float)
 		return Vector2d(value, self._y)
 
 	@property  # vec.y
@@ -28,6 +30,7 @@ class Vector2d(object):
 
 	@y.setter
 	def y(self, value):
+		assert type(value) in (int, float)
 		return Vector2d(self._x, value)
 
 	def __eq__(self, other):
@@ -60,6 +63,69 @@ class Vector2d(object):
 		return Vector2d(self.x / scalar, self.y / scalar)
 
 
+class EulerAngle(object):
+
+	def __init__(self, pitch, yaw, roll):
+		self._pitch = pitch
+		self._yaw = yaw
+		self._roll = roll
+
+	@property
+	def pitch(self):
+		return self._pitch
+
+	@pitch.setter
+	def pitch(self, value):
+		assert type(value) in (int, float)
+		return EulerAngle(value, self.yaw, self.roll)
+
+	@property
+	def yaw(self):
+		return self._yaw
+
+	@yaw.setter
+	def yaw(self, value):
+		assert type(value) in (int, float)
+		return EulerAngle(self.pitch, value, self.roll)
+
+	@property
+	def roll(self):
+		return self._roll
+
+	@roll.setter
+	def roll(self, value):
+		assert type(value) in (int, float)
+		return EulerAngle(self.pitch, self.yaw, value)
+
+	def __eq__(self, other):
+		assert type(other) is EulerAngle, "Comparison with types other than EulerAngle not supported."
+		if self.pitch == other.pitch and self.yaw == other.yaw and self.roll == other.roll:
+			return True
+		else:
+			return False
+
+	def to_vector(self):
+		""" obtain a vector from this EulerAngle. """
+		return Vector2d(
+			# Vx = cos(yaw) * cos(pitch)
+			math.cos(self.yaw) * math.cos(self.pitch),
+			# Vy = sin(pitch)
+			math.sin(self.pitch),
+			# Vz = sin(yaw) * cos(pitch) -- unused in 2D
+			math.sin(self.yaw) * math.cos(self.pitch))
+
+	def normalize(self):
+		if self.pitch > 89.:
+			self.pitch = 89.
+		if self.pitch < -89.:
+			self.pitch = -89.
+
+		while self.yaw < -180.:
+			self.yaw += 360.
+		while self.yaw > 180.:
+			self.yaw -= 360.
+
+
 GRAVITY = Vector2d(0, -2)
 TIME = time.clock()
 
@@ -84,6 +150,14 @@ def look(a, b):
 	assert type(b) is Vector2d, "arg `b` MUST be a Vector2d."
 	c = b - a
 	return c / c.length
+
+def cross_product(a, b):
+	assert type(a) is Vector2d, "arg `a` MUST be a Vector2d."
+	assert type(b) is Vector2d, "arg `b` MUST be a Vector2d."
+	return Vector2d(
+		a.y * b.z - a.z * b.y,
+		a.z * b.x - a.x * b.z,
+		a.x * b.y - a.y * b.x)
 
 def dot_product(a, b):
 	"""
